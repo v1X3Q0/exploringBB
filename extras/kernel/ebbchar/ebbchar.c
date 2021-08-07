@@ -19,17 +19,22 @@
 #define  DEVICE_NAME "ebbchar"    ///< The device will appear at /dev/ebbchar using this value
 #define  CLASS_NAME  "ebb"        ///< The device class -- this is a character device driver
 
+#include "ebbchar.h"
+
 MODULE_LICENSE("GPL");            ///< The license type -- this affects available functionality
 MODULE_AUTHOR("Derek Molloy");    ///< The author -- visible when you use modinfo
 MODULE_DESCRIPTION("A simple Linux char driver for the BBB");  ///< The description -- see modinfo
 MODULE_VERSION("0.1");            ///< A version number to inform users
 
 static int    majorNumber;                  ///< Stores the device number -- determined automatically
-static char   message[256] = {0};           ///< Memory for the string that is passed from userspace
+static char   message[KBUF_SIZE] = {0};           ///< Memory for the string that is passed from userspace
 static short  size_of_message;              ///< Used to remember the size of the string stored
 static int    numberOpens = 0;              ///< Counts the number of times the device is opened
 static struct class*  ebbcharClass  = NULL; ///< The device-driver class struct pointer
 static struct device* ebbcharDevice = NULL; ///< The device-driver device struct pointer
+
+static opVals_t trackedState = 0;
+static void* trackedOff = 0;
 
 // The prototype functions for the character driver -- must come before the struct definition
 static int     dev_open(struct inode *, struct file *);
@@ -110,6 +115,21 @@ static int dev_open(struct inode *inodep, struct file *filep){
    return 0;
 }
 
+void dumpMem(unsigned char* base, size_t len)
+{
+   size_t i = 0;
+   printk("KD: ");
+   for (i = 0; i < len; i+=4)
+   {
+      if (((i % 0x10) == 0) && (i != 0))
+      {
+         printk("\n");
+      }
+      printk("0x%08lx ", *((unsigned int*)&base[i]));
+   }
+}
+
+
 /** @brief This function is called whenever device is being read from user space i.e. data is
  *  being sent from the device to the user. In this case is uses the copy_to_user() function to
  *  send the buffer string to the user and captures any errors.
@@ -121,11 +141,33 @@ static int dev_open(struct inode *inodep, struct file *filep){
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset){
    int error_count = 0;
    // copy_to_user has the format ( * to, *from, size) and returns 0 on success
-   error_count = copy_to_user(buffer, message, size_of_message);
+   size_t tempThing = 0;
+   size_of_message = len;
+   if (len <= sizeof(message))
+   {
+      if ((size_t)trackedOff == 0)
+      {
+         tempThing = (size_t)printk;
+         memcpy(message, &tempThing, sizeof(tempThing));
+      }
+      else if ((size_t)trackedOff == 1)
+      {
+         tempThing = (size_t)dev_read;
+         memcpy(message, &tempThing, sizeof(tempThing));
+      }
+      else
+      {
+         memcpy(message, trackedOff, len);
+      }
+      // dumpMem(message, len);
+      error_count = copy_to_user(buffer, message, len);
+   }
 
    if (error_count==0){            // if true then have success
-      printk(KERN_INFO "EBBChar: Sent %d characters to the user\n", size_of_message);
-      return (size_of_message=0);  // clear the position to the start and return 0
+      // printk(KERN_INFO "EBBChar: Sent %d characters to the user\n", size_of_message);
+      // return (size_of_message=0);  // clear the position to the start and return 0
+      printk(KERN_INFO "EBBChar: Sent %d characters to the user\n", len);
+      return (len=0);  // clear the position to the start and return 0
    }
    else {
       printk(KERN_INFO "EBBChar: Failed to send %d characters to the user\n", error_count);
@@ -142,9 +184,29 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
  *  @param offset The offset if required
  */
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset){
-   sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
-   size_of_message = strlen(message);                 // store the length of the stored message
-   printk(KERN_INFO "EBBChar: Received %zu characters from the user\n", len);
+   // sprintf(message, "%s(%zu letters)", buffer, len);   // appending received string with its length
+   // size_of_message = strlen(message);                 // store the length of the stored message
+   
+   // mechanism wanted for an arbitrary write
+
+   opVals_t interpretState;
+   void* newDest = (void*)((size_t)buffer + sizeof(opVals_t));
+
+   memcpy(&interpretState, buffer, sizeof(opVals_t));
+
+   trackedState = interpretState;
+
+   if (trackedState == SEEK_OP)
+   {
+      memcpy(&trackedOff, newDest, sizeof(void*));
+      printk(KERN_INFO "EBBChar: seeked to pointer %p\n", trackedOff);
+   }
+   else if (trackedState == WRITE_OP)
+   {
+      memcpy(trackedOff, newDest, len);
+
+      printk(KERN_INFO "EBBChar: Received %zu characters from the user\n", len);
+   }
    return len;
 }
 

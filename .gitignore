@@ -10,6 +10,9 @@
 *.mod.c
 *.ko
 
+*.cmd
+dumpText
+
 # Retain shared libraries .so and static libraries .a for the exploringBB repo
 
 
