@@ -125,7 +125,7 @@ void dumpMem(unsigned char* base, size_t len)
       {
          printk("\n");
       }
-      printk("0x%08lx ", *((unsigned int*)&base[i]));
+      printk("0x%08lx ", *((long unsigned int*)&base[i]));
    }
 }
 
@@ -166,7 +166,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
    if (error_count==0){            // if true then have success
       // printk(KERN_INFO "EBBChar: Sent %d characters to the user\n", size_of_message);
       // return (size_of_message=0);  // clear the position to the start and return 0
-      printk(KERN_INFO "EBBChar: Sent %d characters to the user\n", len);
+      printk(KERN_INFO "EBBChar: Sent %lx characters to the user\n", len);
       return (len=0);  // clear the position to the start and return 0
    }
    else {
