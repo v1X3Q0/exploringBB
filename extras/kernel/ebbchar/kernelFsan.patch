@@ -1,0 +1,11 @@
+--- private/msm-google/Makefile	2021-08-14 17:39:15.571683797 -0400
++++ /home/mariomain/Documents/Makefile	2021-08-14 17:39:07.979495541 -0400
+@@ -731,7 +731,7 @@
+ endif
+ 
+ ifdef CONFIG_SHADOW_CALL_STACK
+-scs-flags	:= -fsanitize=shadow-call-stack
++scs-flags	:=
+ KBUILD_CFLAGS	+= $(scs-flags)
+ DISABLE_SCS	:= -fno-sanitize=shadow-call-stack
+ export DISABLE_SCS

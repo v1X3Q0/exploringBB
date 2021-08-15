@@ -12,6 +12,7 @@
 
 *.cmd
 dumpText
+*.bndb
 
 # Retain shared libraries .so and static libraries .a for the exploringBB repo
 

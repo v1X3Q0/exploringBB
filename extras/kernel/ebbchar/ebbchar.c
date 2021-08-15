@@ -190,7 +190,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
    // mechanism wanted for an arbitrary write
 
    opVals_t interpretState;
-   void* newDest = (void*)((size_t)buffer + sizeof(opVals_t));
+   void* newDest = (void*)((size_t)buffer + sizeof(size_t));
 
    memcpy(&interpretState, buffer, sizeof(opVals_t));
 

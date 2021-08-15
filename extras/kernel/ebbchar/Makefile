@@ -1,9 +1,15 @@
 obj-m+=ebbchar.o
 
-BUILD_PATH=/home/mariomain/repos/android-bonito-r10/out/android-msm-pixel-4.9/private/msm-google/
-OG_BUILD_PATH=/lib/modules/$(shell uname -r)/build/
+ifeq ($(ANDROID), )
+BUILD_PATH=$(KERNEL_PATH)/lib/modules/$(shell uname -r)/build/
+else
+ifndef KERNEL_PATH
+$(error need definition for KERNEL_PATH)
+endif
+BUILD_PATH=$(KERNEL_PATH)/out/android-msm-pixel-4.9/private/msm-google/
+endif
 
-ifeq ($(TARGET2),"")
+ifeq ($(TARGET2), )
 	TARGET2 := $(TARGET)gcc
 endif
 

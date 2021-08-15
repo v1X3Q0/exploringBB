@@ -57,7 +57,7 @@ int main(int argc, char** argv)
    void* printkAddr = 0;
    void* addr = 0;
    size_t len = 0;
-   char readBuf[KBUF_SIZE] = {0};
+   unsigned char readBuf[KBUF_SIZE] = {0};
 
    if (argc < 3)
    {
